@@ -27,6 +27,12 @@ def get_clients(db: Session, skip: int = 0, limit: int = 100):
 def get_client_by_id(db: Session, client_id: int):
     return db.query(Client).filter(Client.id == client_id).first()
 
+def search_clients_by_name(db: Session, name: str):
+    """
+    Busca clientes por nombre (búsqueda parcial, no sensible a mayúsculas/minúsculas)
+    """
+    return db.query(Client).filter(Client.name.ilike(f"%{name}%")).all()
+
 # Actualizar un cliente
 def update_client(db: Session, client_id: int, client_data: ClientUpdate):
     db_client = db.query(Client).filter(Client.id == client_id).first()

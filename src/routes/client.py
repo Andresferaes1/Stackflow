@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from src.crud.client_crud import create_client, get_clients, get_client_by_id, update_client, delete_client
+from src.crud.client_crud import create_client, get_clients, get_client_by_id, update_client, delete_client, search_clients_by_name
 from src.schemas.client import ClientCreate, ClientUpdate, ClientResponse
 
 from src.database.database import get_db
@@ -33,6 +33,27 @@ def get_clients_endpoint(skip: int = 0, limit: int = 100, db: Session = Depends(
     clients = get_clients(db, skip=skip, limit=limit)
     if not clients:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No se encontraron clientes.")
+    
+    return clients
+
+# Buscar clientes por nombre
+@client_router.get("/clients/search/", response_model=List[ClientResponse])
+def search_clients_by_name_endpoint(name: str, db: Session = Depends(get_db)):
+    """
+    Busca clientes por nombre (búsqueda parcial)
+    """
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El parámetro 'name' no puede estar vacío"
+        )
+    
+    clients = search_clients_by_name(db, name)
+    if not clients:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontraron clientes con ese nombre"
+        )
     
     return clients
 
