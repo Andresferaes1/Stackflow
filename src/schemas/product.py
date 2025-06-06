@@ -1,6 +1,7 @@
 # src/schemas/product.py
 
 from pydantic import BaseModel
+from datetime import datetime  # Importar datetime de Python
 from typing import Optional
 
 # Esquema base para el producto
@@ -9,6 +10,8 @@ class ProductBase(BaseModel):
     description: Optional[str] = None  # Descripción del producto (opcional)
     price: float  # Precio del producto
     stock_quantity: int  # Cantidad en stock
+    code: str  # Código único del producto
+    created_at: datetime | None = None  # Fecha de creación del producto
 
     
 # Esquema para crear un producto
@@ -25,6 +28,14 @@ class ProductUpdate(ProductBase):
 # Esquema para la respuesta de un producto
 class ProductResponse(ProductBase):
     id: int  # ID del producto que será devuelto en la respuesta
+    code: str
+    name: str
+    description: str | None
+    price: float
+    stock_quantity: int
+    created_at: datetime
+    last_updated: datetime
+    last_stock_update: datetime | None
     
     class Config:
-        orm_mode = True  # Esto le dice a Pydantic que puede trabajar con ORM (como SQLAlchemy)
+        from_attributes = True  # Nuevo en Pydantic v2

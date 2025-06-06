@@ -1,13 +1,15 @@
 # src/routes/product.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
-from src.crud.product_crud import create_product, get_products, get_product_by_id, update_product, delete_product, get_product_by_name
+from src.crud.product_crud import create_product, get_products, get_product_by_id, update_product, delete_product, get_product_by_name, process_csv_updates
 from src.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from src.database.database import get_db  # Importamos la función que nos da acceso a la base de datos
 from typing import List
 from src.schemas.product import ProductResponse
 from src.models.product import Product
+import csv
+from io import StringIO
 
 # Creamos el enrutador para los productos
 product_router = APIRouter()
@@ -65,7 +67,7 @@ def delete_existing_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Producto no encontrado")  # Si no encontramos el producto, lanzamos un error
     return db_product  # Retornamos el producto eliminado
 
-@product_router.get("/products", response_model=List[ProductResponse])
+@product_router.get("/search/", response_model=List[ProductResponse])
 def search_products(query: str, db: Session = Depends(get_db)):
     """
     Buscar productos por nombre o código.
@@ -82,15 +84,52 @@ def search_products(query: str, db: Session = Depends(get_db)):
 
     return products
 
-@product_router.get("/products/{product_id}")
-def get_product(product_id: int, db: Session = Depends(get_db)):
+@product_router.post("/upload-updates/")
+async def update_products_from_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     """
-    Obtener detalles de un producto por ID.
+    Actualiza productos desde un archivo CSV.
+    
+    El archivo CSV debe tener los siguientes campos:
+    - code (requerido): Código único del producto
+    - name (opcional): Nuevo nombre del producto
+    - description (opcional): Nueva descripción
+    - price (opcional): Nuevo precio (número)
+    - stock_quantity (opcional): Nueva cantidad en stock (número entero)
     """
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return product
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(
+            status_code=400,
+            detail="El archivo debe ser un CSV"
+        )
+    
+    try:
+        content = await file.read()
+        csv_text = content.decode('utf-8')
+        results = process_csv_updates(db, csv_text)
+        
+        if not results["updated"] and results["errors"]:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "message": "Error procesando el archivo CSV",
+                    "errors": results["errors"]
+                }
+            )
+        
+        return {
+            "message": "Actualización completada",
+            "updated_products": len(results["updated"]),
+            "errors": results["errors"]
+        }
+        
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Error decodificando el archivo. Asegúrese de que esté en formato UTF-8"
+        )
 
 
 # src/routes/product.py
