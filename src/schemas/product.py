@@ -1,22 +1,56 @@
 # src/schemas/product.py
 
-from pydantic import BaseModel
+from pydantic import BaseModel,  validator, Field # Importar BaseModel de Pydantic
 from datetime import datetime  # Importar datetime de Python
 from typing import Optional
 
 # Esquema base para el producto
 class ProductBase(BaseModel):
-    name: str  # Nombre del producto
-    description: Optional[str] = None  # Descripción del producto (opcional)
-    price: float  # Precio del producto
-    stock_quantity: int  # Cantidad en stock
-    code: str  # Código único del producto
-    created_at: datetime | None = None  # Fecha de creación del producto
+    # Validación de nombre: mínimo 3 caracteres, máximo 100
+    name: str = Field(..., min_length=3, max_length=100, description="Nombre del producto")
+    
+    # Descripción opcional, máximo 500 caracteres
+    description: Optional[str] = Field(
+        None, 
+        max_length=500, 
+        description="Descripción detallada del producto"
+    )
+    
+    # Precio: debe ser positivo
+    price: float = Field(..., gt=0, description="Precio del producto")
+    
+    # Stock: no puede ser negativo
+    stock_quantity: int = Field(..., ge=0, description="Cantidad disponible en inventario")
+    
+    # Código: patrón específico para códigos de producto
+    code: str = Field(
+        ..., 
+        regex="^PRD[0-9]{4}$", 
+        description="Código único del producto (formato: PRDxxxx)"
+    )
+    
+    # Fecha de creación automática
+    created_at: datetime | None = None
+
+    @validator('price')
+    def validate_price(cls, v):
+        """Validación adicional para el precio"""
+        if v > 1000000:  # Ejemplo: límite máximo de precio
+            raise ValueError("El precio no puede ser mayor a 1,000,000")
+        return round(v, 2)  # Redondear a 2 decimales
+
+    @validator('code')
+    def validate_code(cls, v):
+        """Validación adicional para el código"""
+        if not v.startswith('PRD'):
+            raise ValueError("El código debe comenzar con 'PRD'")
+        return v.upper()  # Convertir a mayúsculas
 
     
 # Esquema para crear un producto
 class ProductCreate(ProductBase):
     pass  # El esquema para crear un producto es igual al base, no hace falta nada más
+
 
 # Esquema para actualizar un producto
 class ProductUpdate(ProductBase):
