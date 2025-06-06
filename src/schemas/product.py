@@ -20,7 +20,7 @@ class ProductUpdate(ProductBase):
     name: str | None = None
     description: str | None = None
     price: float | None = None
-    quantity: int | None = None  # ✅ Para actualizar cantidad
+    stock_quantity: int | None = None  # ✅ Para actualizar cantidad
 
 # Esquema para la respuesta de un producto
 class ProductResponse(ProductBase):

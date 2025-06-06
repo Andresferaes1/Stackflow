@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 from src.crud.product_crud import create_product, get_products, get_product_by_id, update_product, delete_product, get_product_by_name
 from src.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from src.database.database import get_db  # Importamos la función que nos da acceso a la base de datos
+from typing import List
+from src.schemas.product import ProductResponse
+from src.models.product import Product
 
 # Creamos el enrutador para los productos
 product_router = APIRouter()
@@ -62,107 +65,77 @@ def delete_existing_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Producto no encontrado")  # Si no encontramos el producto, lanzamos un error
     return db_product  # Retornamos el producto eliminado
 
+@product_router.get("/products", response_model=List[ProductResponse])
+def search_products(query: str, db: Session = Depends(get_db)):
+    """
+    Buscar productos por nombre o código.
+    """
+    if not query:
+        raise HTTPException(status_code=400, detail="El parámetro 'query' no puede estar vacío")
+
+    products = db.query(Product).filter(
+        (Product.name.ilike(f"%{query}%")) | (Product.code.ilike(f"%{query}%"))
+    ).all()
+
+    if not products:
+        raise HTTPException(status_code=404, detail="No se encontraron productos que coincidan con la búsqueda")
+
+    return products
+
+@product_router.get("/products/{product_id}")
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    """
+    Obtener detalles de un producto por ID.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product
+
+
 # src/routes/product.py
 
-@product_router.post("/add-stock/{product_id}")
-def add_stock(product_id: int, amount: int, db: Session = Depends(get_db)):
-    """
-    Aumenta el inventario del producto especificado
-    """
-    # Buscar el producto por su ID
-    product = get_product_by_id(db, product_id)
 
-    # Si el producto no existe, lanzamos un error 404
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-
-    # Sumamos la cantidad al inventario actual del producto
-    product.stock_quantity += amount
-
-    # Guardamos los cambios en la base de datos
-    db.commit()
-
-    # Retornamos un mensaje indicando el nuevo inventario
-    return {"message": f"Stock actualizado. Nuevo inventario: {product.quantity}"}
-
-@product_router.post("/remove-stock/{product_id}")
-def remove_stock(product_id: int, amount: int, db: Session = Depends(get_db)):
-    """
-    Disminuye el inventario del producto especificado
-    """
-    # Buscar el producto por su ID
-    product = get_product_by_id(db, product_id)
-
-    # Si el producto no existe, lanzamos un error 404
-    if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-
-    # Verificamos si hay suficiente stock para descontar la cantidad solicitada
-    if product.stock_quantity < amount:
-        raise HTTPException(status_code=400, detail="Stock insuficiente")
-
-    # Restamos la cantidad al inventario actual del producto
-    product.quantity -= amount
-
-    # Guardamos los cambios en la base de datos
-    db.commit()
-
-    # Retornamos un mensaje indicando el nuevo inventario
-    return {"message": f"Stock actualizado. Nuevo inventario: {product.quantity}"}
-
-import csv
-from fastapi import UploadFile
-
-@product_router.post("/upload-products/")
-def upload_products(file: UploadFile, db: Session = Depends(get_db)):
-    """
-    Carga productos desde un archivo CSV.
-    El archivo debe tener las columnas: name, description, price, stock_quantity.
-    """
-    try:
-        # Leer el archivo CSV
-        content = file.file.read().decode("utf-8").splitlines()
-        reader = csv.DictReader(content)
-
-        for row in reader:
-            # Validar que el stock sea al menos 1
-            stock_quantity = int(row["stock_quantity"])
-            if stock_quantity < 1:
-                raise HTTPException(status_code=400, detail=f"El producto '{row['name']}' debe tener al menos una unidad en stock")
-
-            # Crear el producto
-            create_product(db, row["name"], row["description"], float(row["price"]), stock_quantity)
-
-        db.commit()
-        return {"message": "Productos cargados exitosamente"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al procesar el archivo: {str(e)}")
     
     
-@product_router.post("/upload-stock/")
-def upload_stock(file: UploadFile, db: Session = Depends(get_db)):
-    """
-    Aumenta el stock de productos desde un archivo CSV.
-    El archivo debe tener las columnas: name, stock_quantity.
-    """
-    try:
-        # Leer el archivo CSV
-        content = file.file.read().decode("utf-8").splitlines()
-        reader = csv.DictReader(content)
-
-        for row in reader:
-            # Buscar el producto por nombre
-            product = get_product_by_name(db, row["name"])
-            if not product:
-                raise HTTPException(status_code=404, detail=f"Producto '{row['name']}' no encontrado")
-
-            # Aumentar el stock
-            product.stock_quantity += int(row["stock_quantity"])
-
-        db.commit()
-        return {"message": "Stock actualizado exitosamente"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al procesar el archivo: {str(e)}")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
