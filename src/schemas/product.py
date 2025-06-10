@@ -25,7 +25,7 @@ class ProductBase(BaseModel):
     # Código: patrón específico para códigos de producto
     code: str = Field(
         ..., 
-        regex="^PRD[0-9]{4}$", 
+        pattern="^PRD[0-9]{4}$", 
         description="Código único del producto (formato: PRDxxxx)"
     )
     
@@ -73,3 +73,6 @@ class ProductResponse(ProductBase):
     
     class Config:
         from_attributes = True  # Nuevo en Pydantic v2
+        json_encoders = {
+            datetime: lambda v: v.isoformat()  # Formato ISO para fechas
+        }
