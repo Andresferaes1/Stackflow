@@ -76,3 +76,21 @@ def verify_password_reset_token(token: str):
     except JWTError:
         return None
 
+# === NUEVA FUNCIÓN PARA VERIFICAR TOKEN DE ACCESO ===
+def verify_access_token(token: str):
+    """
+    FUNCIÓN PARA VERIFICAR TOKEN DE ACCESO
+    Decodifica el token JWT y retorna el email del usuario
+    Usada por get_current_user para autenticación
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            return None
+        return email
+    except ExpiredSignatureError:
+        return None  # Token expirado
+    except JWTError:
+        return None  # Token inválido
+
