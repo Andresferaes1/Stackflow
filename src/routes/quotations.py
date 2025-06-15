@@ -4,24 +4,24 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 
 # Importaciones locales
-from database import get_db
-from models.quotation import (
+from src.database.database import get_db
+from src.schemas.quotation import (
     QuotationCreate, QuotationUpdate, QuotationResponse, 
     QuotationListResponse, QuotationFilters, QuotationStatus
 )
-from ..services.quotation_service import QuotationService
-from auth import get_current_user  # Tu sistema de autenticación
-from models.Auth import User  
+from src.crud.quotation_service import QuotationService
+from src.routes.auth import get_current_user
+from src.models.Auth import User  
 
 # Crear router para cotizaciones
-router = APIRouter(
+quotation_router = APIRouter(
     prefix="/quotations",
     tags=["Cotizaciones"],
     dependencies=[Depends(get_current_user)]  # Requiere autenticación
 )
 
 # === ENDPOINT: OBTENER TODAS LAS COTIZACIONES CON FILTROS ===
-@router.get("/", response_model=dict)
+@quotation_router.get("/", response_model=dict)
 async def get_quotations(
     # Parámetros de filtrado opcionales
     quotation_number: Optional[str] = Query(None, description="Buscar por número de cotización"),
@@ -103,7 +103,7 @@ async def get_quotations(
         )
 
 # === ENDPOINT: OBTENER COTIZACIÓN POR ID ===
-@router.get("/{quotation_id}", response_model=QuotationResponse)
+@quotation_router.get("/{quotation_id}", response_model=QuotationResponse)
 async def get_quotation(
     quotation_id: int,
     db: Session = Depends(get_db),
@@ -146,7 +146,7 @@ async def get_quotation(
         )
 
 # === ENDPOINT: CREAR NUEVA COTIZACIÓN ===
-@router.post("/", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
+@quotation_router.post("/", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
 async def create_quotation(
     quotation_data: QuotationCreate,
     db: Session = Depends(get_db),
@@ -197,7 +197,7 @@ async def create_quotation(
         )
 
 # === ENDPOINT: ACTUALIZAR COTIZACIÓN ===
-@router.put("/{quotation_id}", response_model=QuotationResponse)
+@quotation_router.put("/{quotation_id}", response_model=QuotationResponse)
 async def update_quotation(
     quotation_id: int,
     quotation_data: QuotationUpdate,
@@ -266,7 +266,7 @@ async def update_quotation(
         )
 
 # === ENDPOINT: ELIMINAR COTIZACIÓN ===
-@router.delete("/{quotation_id}", status_code=status.HTTP_204_NO_CONTENT)
+@quotation_router.delete("/{quotation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_quotation(
     quotation_id: int,
     db: Session = Depends(get_db),
@@ -319,7 +319,7 @@ async def delete_quotation(
         )
 
 # === ENDPOINT: OBTENER PRÓXIMO NÚMERO DE COTIZACIÓN ===
-@router.get("/next-number/", response_model=dict)
+@quotation_router.get("/next-number/", response_model=dict)
 async def get_next_quotation_number(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -348,7 +348,7 @@ async def get_next_quotation_number(
         )
 
 # === ENDPOINT: CAMBIAR ESTADO DE COTIZACIÓN ===
-@router.patch("/{quotation_id}/status", response_model=QuotationResponse)
+@quotation_router.patch("/{quotation_id}/status", response_model=QuotationResponse)
 async def update_quotation_status(
     quotation_id: int,
     new_status: QuotationStatus,
@@ -411,7 +411,7 @@ async def update_quotation_status(
         )
 
 # === ENDPOINT: DUPLICAR COTIZACIÓN ===
-@router.post("/{quotation_id}/duplicate", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
+@quotation_router.post("/{quotation_id}/duplicate", response_model=QuotationResponse, status_code=status.HTTP_201_CREATED)
 async def duplicate_quotation(
     quotation_id: int,
     db: Session = Depends(get_db),
@@ -475,9 +475,9 @@ async def duplicate_quotation(
         )
 
 # === ENDPOINT: ESTADÍSTICAS DE COTIZACIONES ===
-@router.get("/stats/summary", response_model=dict)
+@quotation_router.get("/stats/summary", response_model=dict)
 async def get_quotations_stats(
-    period: Optional[str] = Query("month", regex="^(week|month|quarter|year)$"),
+    period: Optional[str] = Query("month", pattern="^(week|month|quarter|year)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

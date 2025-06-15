@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware  # Importar CORSMiddleware
 from src.routes.auth import auth_router
 from src.routes.client import client_router      # Importar rutas de clientes
 from src.routes.product import product_router    # Importar rutas de productos
+from src.routes.quotations import quotation_router
+from src.database.database import get_db
+from pydantic import BaseModel, Field
 
 def get_app():
     app = FastAPI()
@@ -20,5 +23,12 @@ def get_app():
     app.include_router(auth_router)
     app.include_router(client_router)  # Registrar rutas de clientes
     app.include_router(product_router)  # Registrar rutas de productos
+    app.include_router(quotation_router)
     
     return app
+
+class Client(BaseModel):
+    client_email: str = Field(..., pattern=r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+
+    class Config:
+        from_attributes = True  # ✅ CORRECTO
