@@ -51,6 +51,22 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass  # El esquema para crear un producto es igual al base, no hace falta nada más
 
+# Esquema para crear un producto desde el frontend
+class ProductCreateFrontend(BaseModel):
+    code: Optional[str] = None
+    name: str = Field(..., min_length=2, max_length=255)
+    description: Optional[str] = None
+    category: Optional[str] = None
+    brand: Optional[str] = None
+    supplier: Optional[str] = None
+    unit_price: float = Field(..., gt=0)
+    profit_margin: Optional[float] = 0.0
+    stock_quantity: int = 0
+    min_stock: Optional[int] = 0
+    warehouse_location: Optional[str] = None
+    weight: Optional[str] = None
+    dimensions: Optional[str] = None
+    product_status: str = "active"
 
 # Esquema para actualizar un producto
 class ProductUpdate(ProductBase):
@@ -60,19 +76,66 @@ class ProductUpdate(ProductBase):
     stock_quantity: int | None = None  # ✅ Para actualizar cantidad
 
 # Esquema para la respuesta de un producto
-class ProductResponse(ProductBase):
-    id: int  # ID del producto que será devuelto en la respuesta
-    code: str
-    name: str
-    description: str | None
-    price: float
-    stock_quantity: int
+class ProductResponse(BaseModel):
+    # === SISTEMA ===
+    id: int
     created_at: datetime
     last_updated: datetime
     last_stock_update: datetime | None
     
+    # === IDENTIFICACIÓN ===
+    code: str
+    name: str
+    description: str | None
+    
+    # === PRECIOS ===
+    price: float
+    profit_margin: float
+    
+    # === INVENTARIO ===
+    stock_quantity: int
+    stock: int = None  # ALIAS para compatibilidad frontend
+    min_stock: int
+    warehouse_location: str | None
+    
+    # === CATEGORIZACIÓN ===
+    category: str | None
+    brand: str | None
+    supplier: str | None
+    
+    # === CARACTERÍSTICAS ===
+    weight: str | None
+    dimensions: str | None
+    product_status: str
+    
+    @validator('stock', pre=True, always=True)
+    def set_stock_alias(cls, v, values):
+        """Alias de stock_quantity para compatibilidad frontend"""
+        return values.get('stock_quantity', 0)
+    
     class Config:
-        from_attributes = True  # Nuevo en Pydantic v2
+        from_attributes = True
         json_encoders = {
-            datetime: lambda v: v.isoformat()  # Formato ISO para fechas
+            datetime: lambda v: v.isoformat()
         }
+
+# AGREGAR nuevos esquemas para respuestas paginadas
+class ProductsPaginatedResponse(BaseModel):
+    items: list[ProductResponse]
+    total: int
+    filtered_total: int
+    page: int
+    pages: int
+    per_page: int
+    filters_applied: dict
+
+class ProductStatistics(BaseModel):
+    total_products: int
+    filtered_products: int
+    available_count: int
+    low_stock_count: int
+    out_of_stock_count: int
+    average_price: float
+    total_inventory_value: float
+    categories_breakdown: dict
+    brands_breakdown: dict
