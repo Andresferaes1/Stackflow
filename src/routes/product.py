@@ -19,7 +19,7 @@ from src.models.product import Product
 import math
 
 # Creamos el enrutador para los productos
-product_router = APIRouter()
+product_router = APIRouter(prefix="/products", tags=["products"])
 
 # Crear un producto
 @product_router.post("/", response_model=ProductResponse)
